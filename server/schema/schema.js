@@ -1,4 +1,3 @@
-//Mongoose Models
 const Project = require("../models/Project");
 const Client = require("../models/Client");
 
@@ -12,18 +11,7 @@ const {
   GraphQLEnumType,
 } = require("graphql");
 
-//Client Type
-const ClientType = new GraphQLObjectType({
-  name: "Client",
-  fields: () => ({
-    id: { type: GraphQLID },
-    name: { type: GraphQLString },
-    email: { type: GraphQLString },
-    phone: { type: GraphQLString },
-  }),
-});
-
-//Project Type
+// Project Type
 const ProjectType = new GraphQLObjectType({
   name: "Project",
   fields: () => ({
@@ -40,22 +28,20 @@ const ProjectType = new GraphQLObjectType({
   }),
 });
 
+// Client Type
+const ClientType = new GraphQLObjectType({
+  name: "Client",
+  fields: () => ({
+    id: { type: GraphQLID },
+    name: { type: GraphQLString },
+    email: { type: GraphQLString },
+    phone: { type: GraphQLString },
+  }),
+});
+
 const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: {
-    clients: {
-      type: new GraphQLList(ClientType),
-      resolve(parent, args) {
-        return Client.find();
-      },
-    },
-    client: {
-      type: ClientType,
-      args: { id: { type: GraphQLID } },
-      resolve(parent, args) {
-        return Client.findById(args.id);
-      },
-    },
     projects: {
       type: new GraphQLList(ProjectType),
       resolve(parent, args) {
@@ -69,14 +55,27 @@ const RootQuery = new GraphQLObjectType({
         return Project.findById(args.id);
       },
     },
+    clients: {
+      type: new GraphQLList(ClientType),
+      resolve(parent, args) {
+        return Client.find();
+      },
+    },
+    client: {
+      type: ClientType,
+      args: { id: { type: GraphQLID } },
+      resolve(parent, args) {
+        return Client.findById(args.id);
+      },
+    },
   },
 });
 
-//Mutations
+// Mutations
 const mutation = new GraphQLObjectType({
   name: "Mutation",
   fields: {
-    //Add a client
+    // Add a client
     addClient: {
       type: ClientType,
       args: {
@@ -90,20 +89,27 @@ const mutation = new GraphQLObjectType({
           email: args.email,
           phone: args.phone,
         });
+
         return client.save();
       },
     },
-    //Delete a client
+    // Delete a client
     deleteClient: {
       type: ClientType,
       args: {
         id: { type: GraphQLNonNull(GraphQLID) },
       },
       resolve(parent, args) {
+        Project.find({ clientId: args.id }).then((projects) => {
+          projects.forEach((project) => {
+            project.remove();
+          });
+        });
+
         return Client.findByIdAndRemove(args.id);
       },
     },
-    //Add a project
+    // Add a project
     addProject: {
       type: ProjectType,
       args: {
@@ -133,7 +139,7 @@ const mutation = new GraphQLObjectType({
         return project.save();
       },
     },
-    //Delete a project
+    // Delete a project
     deleteProject: {
       type: ProjectType,
       args: {
@@ -143,7 +149,7 @@ const mutation = new GraphQLObjectType({
         return Project.findByIdAndRemove(args.id);
       },
     },
-    //Update a project
+    // Update a project
     updateProject: {
       type: ProjectType,
       args: {
@@ -177,9 +183,8 @@ const mutation = new GraphQLObjectType({
     },
   },
 });
-// https://youtu.be/BcLNfwF04Kw
 
-https: module.exports = new GraphQLSchema({
+module.exports = new GraphQLSchema({
   query: RootQuery,
   mutation,
 });
